@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Single tier: the toolkit is three bash scripts and one stdlib Python
+  # driver. `make check` runs everywhere; recording itself needs a human
+  # (or an agent) with asciinema/agg and isn't a CI concern.
+  check:
+    name: Check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        # actions/checkout v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Install shellcheck
+        # make lint skips shellcheck when absent; CI must not skip it.
+        run: sudo apt-get update -q && sudo apt-get install -y -q shellcheck
+
+      - name: Lint + doctor + driver gates
+        run: make check
+
+      - name: Doctor resolves without recorder tools
+        # Guard the deliberate ordering in record.sh: --print-config must
+        # work on a box with neither asciinema nor agg installed.
+        run: |
+          set -euo pipefail
+          if command -v asciinema >/dev/null || command -v agg >/dev/null; then
+            echo "note: recorder tools present on runner; ordering still guarded by make doctor"
+          fi
+          ./record.sh --print-config . >/dev/null
+          echo "print-config: ok"

@@ -1,0 +1,34 @@
+# --- Recording output ---
+# Takes are regenerable; a recording worth keeping is curated into the
+# consuming repo's docs/media/, not committed here.
+recordings/
+*.cast
+*.gif
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+
+# --- Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Local, per-machine agent settings ---
+.claude/settings.local.json
+.claude/settings.json
+.cursor/settings.json
+
+# --- Local config and secrets ---
+.env
+*.local.json
+*.pem
+*.key
+
+*.bak

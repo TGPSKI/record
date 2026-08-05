@@ -7,14 +7,14 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/recording/record.sh [options] DIR [CMD ...]
-  scripts/recording/record.sh --help
+  ./record.sh [options] DIR [CMD ...]
+  ./record.sh --help
 
 Examples:
-  scripts/recording/record.sh .
-  scripts/recording/record.sh ~/src/my-app npm test
-  scripts/recording/record.sh ../other-repo --env NODE_ENV=production make demo
-  scripts/recording/record.sh . --title "release demo" --basename release-demo leather run --pretty demo.agent.md
+  ./record.sh .
+  ./record.sh ~/src/my-app npm test
+  ./record.sh ../other-repo --env NODE_ENV=production make demo
+  ./record.sh . --title "release demo" --basename release-demo leather run --pretty demo.agent.md
 
 Options:
   -h, --help                  Show this help text.
@@ -211,10 +211,14 @@ done
   exit 2
 }
 
-require_tool asciinema
-require_tool agg
-if (( ${#MISSING_TOOLS[@]} > 0 )); then
-  die "missing tools: ${MISSING_TOOLS[*]}"
+# --print-config is a pure resolver — it must work on a box (or CI runner)
+# that has neither recorder tool installed, so the check moves below it.
+if (( PRINT_CONFIG == 0 )); then
+  require_tool asciinema
+  require_tool agg
+  if (( ${#MISSING_TOOLS[@]} > 0 )); then
+    die "missing tools: ${MISSING_TOOLS[*]}"
+  fi
 fi
 
 if [[ "${TARGET_DIR}" == /* ]]; then

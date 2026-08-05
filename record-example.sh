@@ -7,13 +7,13 @@ set -euo pipefail
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "help" ]]; then
   cat <<'EOF'
 Usage:
-  scripts/recording/record-example.sh NN [extra-make-args...]
-  scripts/recording/record-example.sh --help
+  ./record-example.sh NN [extra-make-args...]
+  ./record-example.sh --help
 
 Runs `make example-NN ...` inside the Leather repo through the shared recorder.
 Examples:
-  scripts/recording/record-example.sh 01
-  scripts/recording/record-example.sh 09-live LEATHER_MODEL=qwen
+  ./record-example.sh 01
+  ./record-example.sh 09-live LEATHER_MODEL=qwen
 EOF
   exit 0
 fi

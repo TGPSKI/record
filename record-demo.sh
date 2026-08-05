@@ -15,10 +15,10 @@ fi
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "help" ]]; then
   cat <<'EOF'
 Usage:
-  scripts/recording/record-demo.sh DIR [CMD ...]
-  scripts/recording/record-demo.sh --help
+  ./record-demo.sh DIR [CMD ...]
+  ./record-demo.sh --help
 
-Leather-focused wrapper around scripts/recording/record.sh.
+Leather-focused wrapper around ./record.sh.
 It preserves the older LEATHER_RECORD_* environment variables and defaults
 the prompt + render theme to the Leather palette.
 EOF
