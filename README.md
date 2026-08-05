@@ -1,135 +1,111 @@
-# Recording Tools
+# record
 
-This directory holds a small terminal-recording toolkit built around
-[`asciinema`](https://asciinema.org/) for capture and `agg` for GIF rendering.
+Terminal-demo recording for the PATE stack: asciinema capture rendered to
+polished, README-ready GIFs — with reproducible prompts, themes, and
+dimensions — plus an agent skill that produces those demos **unattended**,
+driving the recorder inside a pseudo-terminal with a timed key script and
+verifying the result frame by frame.
 
-The center of gravity is [`record.sh`](./record.sh). The other scripts are thin
-wrappers:
+Every animated demo in the portfolio's READMEs
+([pane](https://github.com/TGPSKI/pane),
+[leather](https://github.com/TGPSKI/leather)'s examples) was made with this
+toolkit; pane's three were recorded by an agent using exactly the workflow
+`SKILL.md` encodes.
 
-- [`record.sh`](./record.sh): general-purpose recorder for any repo or working tree
-- [`record-demo.sh`](./record-demo.sh): Leather-flavored wrapper with Leather prompt/theme defaults
-- [`record-example.sh`](./record-example.sh): Leather example wrapper that records `make example-NN`
+## What's here
+
+| File | Role |
+|---|---|
+| [`record.sh`](./record.sh) | The recorder: asciinema capture → path scrubbing → optional line pacing → tail trim → agg GIF render. Works on any repo or directory. |
+| [`assets/drive.py`](./assets/drive.py) | Unattended operator: runs `record.sh` (or any command) in a pty and plays a timed key script — `"6:ENTER 3.5:v 1.5:/ 0.6:scan 0.8:ENTER 3:q 1.5:CTRL_D"` |
+| [`SKILL.md`](./SKILL.md) | The agent skill: storyboard from the app's real keybindings → smoke → record → **verify every frame** → publish to `docs/media/` |
+| [`record-demo.sh`](./record-demo.sh) | Leather-flavored wrapper (prompt/theme defaults, legacy `LEATHER_RECORD_*` env names) |
+| [`record-example.sh`](./record-example.sh) | Records a numbered leather example via `make example-NN` |
 
 ## Requirements
 
-- `asciinema`
-- `agg`
-- `zsh`
+`asciinema`, `agg`, `zsh`. The unattended driver needs Python 3 (stdlib
+only); frame verification uses ImageMagick. `./record.sh --print-config`
+and `make check` run without any of them installed.
 
-## Quick Start
+## Quick start
 
-Record the current repo and preload a command:
-
-```bash
-./scripts/recording/record.sh . leather run --pretty tanning/agents/go-release-prep.agent.md
-```
-
-Record with Leather defaults:
+Record interactively — the command is preloaded into the prompt buffer, you
+press Enter and drive:
 
 ```bash
-./scripts/recording/record-demo.sh . leather run --pretty tanning/agents/go-release-prep.agent.md
+./record.sh ~/git/myproj make demo
+./record.sh . --title "release demo" --basename release-demo -- npm test
 ```
 
-Record a numbered example:
+Record unattended — an agent (or a script) plays the keys:
 
 ```bash
-./scripts/recording/record-example.sh 01
+assets/drive.py \
+  --record ./record.sh --dir ~/git/myproj \
+  --basename demo --cols 120 --rows 30 --font-size 16 \
+  --script "6:ENTER 3.5:v 2.5:j 1.5:/ 0.6:scan 0.8:ENTER 3:q 1.5:CTRL_D"
 ```
 
-## Local Makefile
-
-There is a directory-local Makefile for common flows:
+Then verify before publishing (`-coalesce` is mandatory — raw extraction
+yields inter-frame diffs that read as corruption):
 
 ```bash
-make -C scripts/recording help
-make -C scripts/recording doctor
-make -C scripts/recording demo DIR=. CMD='leather run --pretty tanning/agents/go-release-prep.agent.md'
-make -C scripts/recording example NN=09-live
+magick recordings/demo.gif -coalesce frame_%02d.png
 ```
 
-`doctor` is useful when you want to see the resolved output paths and defaults
-without launching an interactive recording.
-
-## Shared CLI
-
-`record.sh` accepts:
-
-```text
-scripts/recording/record.sh [options] DIR [CMD ...]
-```
-
-Useful flags:
-
-- `--print-config`
-- `--env KEY=VALUE`
-- `--env-file PATH`
-- `--no-env-file`
-- `--title TEXT`
-- `--demo-name TEXT`
-- `--label TEXT`
-- `--basename NAME`
-- `--out-dir DIR`
-- `--prompt-label TEXT`
-- `--prompt-color HEX`
-- `--font-size PT`
-- `--cols N`
-- `--rows N`
-- `--select RANGE`
-- `--idle-time-limit SEC`
-- `--last-frame-duration SEC`
-- `--line-delay SEC`
-- `--line-chunk N`
-- `--source-zshrc`
-
-See full help:
+Resolve configuration without recording:
 
 ```bash
-./scripts/recording/record.sh --help
+make doctor DIR=~/git/myproj      # or: ./record.sh --print-config DIR
 ```
 
-## Environment Variables
+## The skill
 
-The shared recorder supports these `RECORD_*` variables:
+`SKILL.md` routes an agent through five phases: **storyboard** (read the
+app's `handle_key` — never guess bindings, pin the startup view), **smoke**
+(rehearse the key script in a pty before spending a take), **record**,
+**verify** (read every coalesced frame; a tab overshoot or a surprise
+picker is invisible any other way), **publish** (curated GIF committed to
+`docs/media/`, raw takes gitignored, alt text that narrates the
+storyboard).
 
-- `RECORD_ENV_FILE`
-- `RECORD_OUT_DIR`
-- `RECORD_OUT_BASENAME`
-- `RECORD_TITLE`
-- `RECORD_DEMO_NAME`
-- `RECORD_WORKDIR_LABEL`
-- `RECORD_PROMPT_LABEL`
-- `RECORD_PROMPT_COLOR`
-- `RECORD_FONT_SIZE`
-- `RECORD_COLS`
-- `RECORD_ROWS`
-- `RECORD_SELECT`
-- `RECORD_IDLE_LIMIT`
-- `RECORD_LAST_FRAME_DURATION`
-- `RECORD_LINE_DELAY`
-- `RECORD_LINE_CHUNK`
-- `RECORD_SOURCE_ZSHRC`
-- `RECORD_AGG_THEME`
-- `RECORD_TEXT_FONTS`
+Install by symlinking the repo into your skills directory:
 
-The Leather wrappers also preserve the older `LEATHER_RECORD_*` names.
-
-## Output
-
-By default the generated files land in:
-
-```text
-<project-root>/recordings/<timestamp>.cast
-<project-root>/recordings/<timestamp>.gif
+```bash
+ln -s ~/git/TGPSKI/record ~/.agents/skills/record
 ```
 
-You can override the directory and basename with `--out-dir` and `--basename`.
+## Behavior worth knowing
 
-## Notes
+- **The prompt buffer, not a pipe.** The demo command is preloaded via a
+  zle hook so TTY-aware programs (curses apps, progress bars) behave
+  exactly as they would for a human. Piping input would break them.
+- **Paths are scrubbed.** The working directory and project root are
+  rewritten to short labels in the cast before rendering, so a recording
+  never leaks `/home/you/...`. Check what a recording shows before
+  publishing regardless — repo names and data have visibility too.
+- **The cast is trimmed and pace-able.** Trailing prompt-redraw noise is
+  removed; `--line-delay/--line-chunk` pace long single-burst output so the
+  GIF stays readable without slowing the command itself.
+- **Every knob is a flag and a `RECORD_*` env var** — see `./record.sh
+  --help` for the full table (geometry, fonts, theme, idle limit, select
+  range, last-frame pause).
 
-- The recorder preloads the command into the prompt buffer instead of piping it
-  into the shell. That keeps TTY-aware output like `leather run --pretty`
-  working normally.
-- Long single-event output can be paced with `--line-delay` and `--line-chunk`
-  so the GIF remains readable without slowing the command itself.
-- The cast is trimmed to remove the final prompt redraw and Ctrl-D newline noise
-  before GIF rendering.
+## Development
+
+```bash
+make help     # self-documenting targets
+make check    # lint + doctor + drive.py gates (what CI runs)
+make lint     # bash -n, shellcheck when present, SKILL.md asset refs
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). The bar for changes: `record.sh`
+stays a single portable script, the driver stays stdlib-only, and anything
+that changes what a recording shows gets re-verified frame by frame.
+
+## License
+
+GPL-3.0 — see [LICENSE](LICENSE).
